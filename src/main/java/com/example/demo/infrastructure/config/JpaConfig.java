@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  */
 @Configuration
 @EnableJpaRepositories(
-    basePackages = "com.example.demo.infrastructure.persistence"
+    basePackages = "com.example.demo.infrastructure.database.repository"
 )
 public class JpaConfig {
 }
