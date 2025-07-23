@@ -1,3 +1,48 @@
+# Maven build artifacts
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Spring Boot
+*.log
+*.log.*
+
+# H2 Database
+*.db
+*.trace.db
+*.lock.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Java
+*.class
+*.jar
+*.war
+
+# Application specific
+application-local.yml
+application-dev.yml
+application-prod.yml
+
 # Compiled class file
 *.class
 
