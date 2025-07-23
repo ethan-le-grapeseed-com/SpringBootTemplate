@@ -20,12 +20,13 @@ public class Email extends ValueObject {
     }
     
     public static Email of(String email) {
-        validateEmail(email);
-        return new Email(email.toLowerCase().trim());
+        String trimmedEmail = email != null ? email.trim() : null;
+        validateEmail(trimmedEmail);
+        return new Email(trimmedEmail.toLowerCase());
     }
     
     private static void validateEmail(String email) {
-        if (email == null || email.trim().isEmpty()) {
+        if (email == null || email.isEmpty()) {
             throw new BusinessRuleViolationException("Email cannot be null or empty");
         }
         

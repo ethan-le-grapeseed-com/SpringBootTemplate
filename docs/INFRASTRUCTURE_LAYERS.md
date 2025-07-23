@@ -1,100 +1,298 @@
-# Infrastructure Layer Architecture
+# Kiến trúc Infrastructure Layer
 
-## Tổng quan
+## 📋 Tổng quan
 
-Infrastructure layer đã được phân tách thành các sub-layers chuyên biệt để đảm bảo tính modular và separation of concerns:
+Infrastructure layer được thiết kế với các nguyên tắc Clean Architecture, triển khai **Service Interface Pattern** để duy trì sự tách biệt giữa application logic và các chi tiết technical implementation.
 
-## Cấu trúc Infrastructure Layers
+## 🏗️ Kiến trúc Infrastructure Service
 
-### 1. Database Layer (`database/`)
-**Mục đích**: Quản lý tất cả các tương tác với database
-- **Config**: `DatabaseConfig.java` - Cấu hình JPA, repositories, transactions
-- **Adapter**: `DatabaseRepositoryAdapter.java` - Base adapter cho database operations
-- **Repository**: Các JPA repositories cụ thể
-
-**Đặc điểm**:
-- Transactional operations
-- JPA/Hibernate integration
-- Repository pattern implementation
-- Database-specific configurations
-
-### 2. Cache Layer (`cache/`)
-**Mục đích**: Quản lý caching strategies và operations
-- **Config**: `CacheConfig.java` - Cấu hình cache managers
-- **Adapter**: `CacheAdapter.java` - Type-safe cache operations
-
-**Đặc điểm**:
-- Spring Cache abstraction
-- Multiple cache backends support
-- Type-safe operations
-- Cache eviction strategies
-
-### 3. External API Layer (`external/`)
-**Mục đích**: Xử lý tất cả các external API calls với resilience patterns
-- **Config**: `ExternalApiConfig.java` - Circuit breaker, retry configurations
-- **Adapter**: `ExternalApiAdapter.java` - Resilient HTTP client
-- **Exception**: `ExternalApiException.java` - Specialized exceptions
-
-**Đặc điểm**:
-- Circuit breaker pattern (Resilience4j)
-- Retry mechanism with exponential backoff
-- Transient fault handling
-- Comprehensive error handling và logging
-
-### 4. Messaging Layer (`messaging/`)
-**Mục đích**: Quản lý internal events và external messaging
-- **Config**: `MessagingConfig.java` - Message broker configurations
-- **Adapter**: `MessagingAdapter.java` - Event publishing và messaging
-- **Publisher**: `SpringDomainEventPublisher.java` - Domain event publishing
-
-**Đặc điểm**:
-- Domain event publishing
-- External message broker integration (future)
-- Asynchronous processing support
-- Event-driven architecture support
-
-### 5. Security Layer (`security/`)
-**Mục đích**: Xử lý authentication, authorization, và data protection
-- **Config**: `SecurityConfig.java` - Security policies
-- **Adapter**: `SecurityAdapter.java` - Security operations
-
-**Đặc điểm**:
-- User context management
-- Permission checking
-- Data encryption/decryption
-- Security audit logging
-
-## Resilience Patterns
-
-### Circuit Breaker
+### **Service Interface Pattern**
 ```java
-// Cấu hình trong ExternalApiConfig
-CircuitBreakerConfig.custom()
-    .failureRateThreshold(50)           // 50% failure rate triggers open
-    .waitDurationInOpenState(1000ms)    // Wait 1s before half-open
-    .slidingWindowSize(2)               // Monitor last 2 calls
-    .minimumNumberOfCalls(2)            // Min calls before evaluation
+// Application Layer (Interfaces)
+public interface CacheService {
+    void put(String key, Object value);
+    Optional<Object> get(String key);
+    void evict(String key);
+}
+
+// Infrastructure Layer (Implementations) 
+@Service
+public class CacheServiceImpl implements CacheService {
+    private final CacheManager cacheManager;
+    
+    @Override
+    public void put(String key, Object value) {
+        cacheManager.getCache("default").put(key, value);
+    }
+}
+
+// Configuration (Dependency Injection)
+@Configuration
+public class UseCaseConfig {
+    @Bean
+    public CacheService cacheService(CacheManager cacheManager) {
+        return new CacheServiceImpl(cacheManager);
+    }
+}
 ```
 
-### Retry Mechanism
+## 🔧 Cấu trúc Infrastructure Layers
+
+### 1. **Application Service Interfaces** (`core/application/service/`)
+**Mục đích**: Định nghĩa các contracts cho infrastructure operations
+
 ```java
-// Cấu hình retry
-RetryConfig.custom()
-    .maxAttempts(3)                     // Maximum 3 attempts
-    .waitDuration(500ms)                // Wait 500ms between retries
+// Cache operations
+public interface CacheService {
+    void put(String key, Object value);
+    Optional<Object> get(String key);
+    void evict(String key);
+    void clear();
+}
+
+// External API operations
+public interface ExternalApiService {
+    <T> T get(String url, Class<T> responseType);
+    <T> T post(String url, Object request, Class<T> responseType);
+    void putWithCircuitBreaker(String url, Object request);
+}
+
+// Messaging operations
+public interface MessagingService {
+    void sendMessage(String topic, Object message);
+    void subscribe(String topic, MessageHandler handler);
+}
+
+// Security operations
+public interface SecurityService {
+    String getCurrentUserId();
+    boolean hasPermission(String permission);
+    void authenticate(String token);
+}
 ```
 
-### Transient Fault Handling
-- Network timeouts
-- HTTP 5xx errors
-- Connection failures
-- Service unavailability
+### 2. **Infrastructure Service Implementations** (`core/infrastructure/service/`)
+**Mục đích**: Cung cấp technical implementations của application interfaces
 
-## Usage Examples
-
-### Database Operations
+#### **CacheServiceImpl** - Caching Layer
 ```java
 @Service
+public class CacheServiceImpl implements CacheService {
+    private final CacheManager cacheManager;
+    
+    @Override
+    public void put(String key, Object value) {
+        Cache cache = cacheManager.getCache("default");
+        if (cache != null) {
+            cache.put(key, value);
+        }
+    }
+    
+    @Override
+    public Optional<Object> get(String key) {
+        Cache cache = cacheManager.getCache("default");
+        if (cache != null) {
+            Cache.ValueWrapper wrapper = cache.get(key);
+            return Optional.ofNullable(wrapper != null ? wrapper.get() : null);
+        }
+        return Optional.empty();
+    }
+}
+```
+
+#### **ExternalApiServiceImpl** - External Integration Layer  
+```java
+@Service
+public class ExternalApiServiceImpl implements ExternalApiService {
+    private final RestTemplate restTemplate;
+    private final CircuitBreaker circuitBreaker;
+    
+    @Override
+    public <T> T get(String url, Class<T> responseType) {
+        return circuitBreaker.executeSupplier(() -> 
+            restTemplate.getForObject(url, responseType));
+    }
+    
+    @Override
+    public <T> T post(String url, Object request, Class<T> responseType) {
+        return circuitBreaker.executeSupplier(() ->
+            restTemplate.postForObject(url, request, responseType));
+    }
+#### **Database Adapter** - Data Persistence
+```java
+@Repository
+public class DatabaseRepositoryAdapter {
+    private final EntityManager entityManager;
+    
+    public <T> Optional<T> findById(Class<T> entityClass, Object id) {
+        T entity = entityManager.find(entityClass, id);
+        return Optional.ofNullable(entity);
+    }
+    
+    public <T> T save(T entity) {
+        return entityManager.merge(entity);
+    }
+}
+```
+
+#### **Cache Adapter** - Caching Operations
+```java
+@Component
+public class CacheAdapter {
+    private final RedisTemplate<String, Object> redisTemplate;
+    
+    public void put(String key, Object value, Duration ttl) {
+        redisTemplate.opsForValue().set(key, value, ttl);
+    }
+    
+    public Optional<Object> get(String key) {
+        Object value = redisTemplate.opsForValue().get(key);
+        return Optional.ofNullable(value);
+    }
+}
+```
+
+#### **External API Adapter** - HTTP Client Operations
+```java
+@Component
+public class ExternalApiAdapter {
+    private final RestTemplate restTemplate;
+    private final CircuitBreaker circuitBreaker;
+    
+    @Retryable(value = {HttpServerErrorException.class}, 
+               maxAttempts = 3, backoff = @Backoff(delay = 1000))
+    public <T> ResponseEntity<T> get(String url, Class<T> responseType) {
+        return circuitBreaker.executeSupplier(() -> 
+            restTemplate.getForEntity(url, responseType));
+    }
+}
+```
+
+#### **Messaging Adapter** - Event Publishing
+```java
+@Component
+public class MessagingAdapter {
+    private final ApplicationEventPublisher eventPublisher;
+    private final RabbitTemplate rabbitTemplate; // Optional external messaging
+    
+    public void publishDomainEvent(DomainEvent event) {
+        eventPublisher.publishEvent(event);
+    }
+    
+    public void sendExternalMessage(String exchange, String routingKey, Object message) {
+        rabbitTemplate.convertAndSend(exchange, routingKey, message);
+    }
+}
+```
+
+## 🔧 Configuration Layer
+
+### **UseCaseConfig** - Main Configuration
+```java
+@Configuration
+@EnableJpaRepositories
+@EnableCaching
+@EnableAsync
+public class UseCaseConfig {
+    
+    @Bean
+    public CacheService cacheService(CacheManager cacheManager) {
+        return new CacheServiceImpl(cacheManager);
+    }
+    
+    @Bean
+    public ExternalApiService externalApiService(RestTemplate restTemplate, 
+                                                CircuitBreaker circuitBreaker) {
+        return new ExternalApiServiceImpl(restTemplate, circuitBreaker);
+    }
+    
+    @Bean
+    public MessagingService messagingService(ApplicationEventPublisher eventPublisher) {
+        return new MessagingServiceImpl(eventPublisher);
+    }
+    
+    @Bean
+    public SecurityService securityService(SecurityContext securityContext) {
+        return new SecurityServiceImpl(securityContext);
+    }
+}
+```
+
+### **WebConfig** - Web Layer Configuration
+```java
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+    
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**")
+                .allowedOrigins("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE")
+                .allowedHeaders("*");
+    }
+    
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+}
+```
+
+## 🛡️ Resilience Patterns
+
+### **Circuit Breaker Pattern**
+```java
+@Configuration
+public class ResilienceConfig {
+    
+    @Bean
+    public CircuitBreaker externalApiCircuitBreaker() {
+        return CircuitBreaker.of("externalApi", CircuitBreakerConfig.custom()
+            .failureRateThreshold(50)           // 50% failure rate triggers open
+            .waitDurationInOpenState(Duration.ofMillis(1000))  // Wait 1s before half-open
+            .slidingWindowSize(2)               // Monitor last 2 calls
+            .minimumNumberOfCalls(2)            // Min calls before evaluation
+            .build());
+    }
+}
+```
+
+### **Retry Mechanism**
+```java
+@Retryable(
+    value = {HttpServerErrorException.class, ResourceAccessException.class},
+    maxAttempts = 3,
+    backoff = @Backoff(delay = 500, multiplier = 2)
+)
+public <T> T callExternalApi(String url, Class<T> responseType) {
+    // External API call implementation
+}
+```
+
+## 📊 Usage Examples
+
+### **Application Service Usage**
+```java
+@Component
+public class UserIntegrationService {
+    private final CacheService cacheService;
+    private final ExternalApiService externalApiService;
+    private final MessagingService messagingService;
+    
+    public void processUser(User user) {
+        // Cache user data
+        cacheService.put("user:" + user.getId(), user);
+        
+        // Call external service
+        UserValidationResponse validation = externalApiService.post(
+            "/api/validate", user, UserValidationResponse.class);
+        
+        // Send notification
+        messagingService.sendMessage("user.processed", 
+            UserProcessedEvent.of(user, validation));
+    }
+}
 public class UserService {
     private final UserRepository userRepository; // Uses DatabaseRepositoryAdapter
     

@@ -1,9 +1,9 @@
 package com.example.demo.application.service;
 
-import com.example.core.infrastructure.cache.adapter.CacheAdapter;
-import com.example.core.infrastructure.external.adapter.ExternalApiAdapter;
-import com.example.core.infrastructure.messaging.adapter.MessagingAdapter;
-import com.example.core.infrastructure.security.adapter.SecurityAdapter;
+import com.example.core.application.service.CacheService;
+import com.example.core.application.service.ExternalApiService;
+import com.example.core.application.service.MessagingService;
+import com.example.core.application.service.SecurityService;
 import com.example.demo.domain.model.User;
 import com.example.demo.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,10 +25,10 @@ public class UserIntegrationService {
     private static final Logger logger = LoggerFactory.getLogger(UserIntegrationService.class);
     
     private final UserRepository userRepository;
-    private final CacheAdapter cacheAdapter;
-    private final ExternalApiAdapter externalApiAdapter;
-    private final MessagingAdapter messagingAdapter;
-    private final SecurityAdapter securityAdapter;
+    private final CacheService cacheService;
+    private final ExternalApiService externalApiService;
+    private final MessagingService messagingService;
+    private final SecurityService securityService;
     
     /**
      * Get user with integrated caching, external validation, and security.
@@ -38,17 +38,17 @@ public class UserIntegrationService {
      */
     public Optional<User> getUserWithIntegration(Long userId) {
         // 1. Security check
-        String currentUserId = securityAdapter.getCurrentUserId();
-        if (!securityAdapter.hasPermission("READ_USER")) {
+        String currentUserId = securityService.getCurrentUserId();
+        if (!securityService.hasPermission("READ_USER")) {
             logger.warn("User {} does not have permission to read user data", currentUserId);
             return Optional.empty();
         }
         
         // 2. Try cache first
         String cacheKey = "user:" + userId;
-        Optional<User> cachedUser = cacheAdapter.get("users", cacheKey, User.class);
+        Optional<User> cachedUser = cacheService.get("users", cacheKey, User.class);
         if (cachedUser.isPresent()) {
-            logger.debug("User {} found in cache", userId);
+            logger.debug("User found in cache: {}", userId);
             return cachedUser;
         }
         
@@ -60,7 +60,7 @@ public class UserIntegrationService {
         }
         
         // 4. Cache the result
-        cacheAdapter.put("users", cacheKey, user.get());
+        cacheService.put("users", cacheKey, user.get());
         
         // 5. External API validation (example)
         try {
@@ -71,7 +71,7 @@ public class UserIntegrationService {
         }
         
         // 6. Publish access event
-        messagingAdapter.publishMessage("user.events", 
+        messagingService.publishMessage("user.events", 
             String.format("User %d accessed by %s", userId, currentUserId));
         
         return user;
@@ -83,7 +83,7 @@ public class UserIntegrationService {
     private void validateUserExternally(User user) {
         try {
             String validationUrl = "https://api.example.com/validate/user/" + user.getId();
-            ResponseEntity<String> response = externalApiAdapter.get(
+            ResponseEntity<String> response = externalApiService.get(
                 "user-validation-service", 
                 validationUrl, 
                 String.class
@@ -104,7 +104,7 @@ public class UserIntegrationService {
      */
     public User updateUserWithIntegration(User user) {
         // 1. Security check
-        if (!securityAdapter.hasPermission("WRITE_USER")) {
+        if (!securityService.hasPermission("WRITE_USER")) {
             throw new SecurityException("Insufficient permissions to update user");
         }
         
@@ -113,7 +113,7 @@ public class UserIntegrationService {
         
         // 3. Update cache
         String cacheKey = "user:" + user.getId();
-        cacheAdapter.put("users", cacheKey, savedUser);
+        cacheService.put("users", cacheKey, savedUser);
         
         // 4. Notify external systems
         try {
@@ -124,7 +124,7 @@ public class UserIntegrationService {
         }
         
         // 5. Publish update event
-        messagingAdapter.publishMessage("user.events", 
+        messagingService.publishMessage("user.events", 
             String.format("User %d updated", savedUser.getId()));
         
         return savedUser;
@@ -143,7 +143,7 @@ public class UserIntegrationService {
             public final String timestamp = java.time.Instant.now().toString();
         };
         
-        ResponseEntity<String> response = externalApiAdapter.post(
+        ResponseEntity<String> response = externalApiService.post(
             "notification-service", 
             notificationUrl, 
             notification, 

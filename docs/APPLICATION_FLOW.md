@@ -1,10 +1,10 @@
-# Luồng Hoạt Động Của Ứng Dụng
+# Tài liệu Luồng xử lý ứng dụng
 
-## Tổng Quan
+## 📋 Tổng quan
 
-Tài liệu này mô tả luồng hoạt động của ứng dụng Spring Boot Clean Architecture Template, từ khi nhận HTTP request cho đến khi trả về response. Ứng dụng tuân theo các nguyên tắc Clean Architecture và triển khai pattern CQRS để tách biệt rõ ràng giữa Command (thay đổi dữ liệu) và Query (đọc dữ liệu).
+Tài liệu này mô tả luồng xử lý hoàn chình của Spring Boot Clean Architecture Template, từ việc nhận HTTP requests đến trả về responses. Ứng dụng tuân theo các nguyên tắc Clean Architecture và triển khai CQRS pattern để tách biệt rõ ràng Commands (sửa đổi dữ liệu) khỏi Queries (đọc dữ liệu).
 
-## Kiến Trúc Tổng Quan
+## 🏗️ Tổng quan Kiến trúc
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -19,9 +19,36 @@ Tài liệu này mô tả luồng hoạt động của ứng dụng Spring Boot 
 └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 1. Luồng Command (Tạo/Cập Nhật Dữ Liệu)
+## 🔄 Tích hợp Application Service
 
-### 1.1 Tạo User Mới - POST /api/users
+Ứng dụng sử dụng **Service Interface Pattern** để duy trì các nguyên tắc Clean Architecture:
+
+```java
+// Application Layer (Interfaces)
+public interface CacheService {
+    void put(String key, Object value);
+    Optional<Object> get(String key);
+}
+
+public interface MessagingService {
+    void sendMessage(String topic, Object message);
+}
+
+// Infrastructure Layer (Implementations)
+@Service
+public class CacheServiceImpl implements CacheService {
+    // Redis/Caffeine implementation
+}
+
+@Service 
+public class MessagingServiceImpl implements MessagingService {
+    // RabbitMQ/Kafka implementation
+}
+```
+
+## 1. 🚀 Luồng Command (Tạo/Cập nhật Dữ liệu)
+
+### 1.1 Tạo User - POST /api/users
 
 ```mermaid
 sequenceDiagram
@@ -31,7 +58,8 @@ sequenceDiagram
     participant Handler as CreateUserCommandHandler
     participant Domain as User (Aggregate)
     participant Repository as UserRepository
-    participant EventPublisher as DomainEventPublisher
+    participant Cache as CacheService
+    participant Messaging as MessagingService
     participant EventHandler as UserCreatedEventHandler
     participant Database
 
@@ -53,7 +81,7 @@ sequenceDiagram
     
     alt Email already exists
         Handler-->>Controller: BusinessRuleViolationException
-        Controller-->>Client: 400 Bad Request
+        Controller-->>Client: 400 Bad Request (ApiResponse format)
     else Email is unique
         Handler->>Domain: User.create(firstName, lastName, email)
         Note over Domain: • Validate business rules<br/>• Create User entity<br/>• Add UserCreatedEvent
@@ -64,43 +92,47 @@ sequenceDiagram
         Database-->>Repository: User with ID
         Repository-->>Handler: Saved User
         
-        Handler->>EventPublisher: publishAll(user.getDomainEvents())
-        EventPublisher->>EventHandler: handle(UserCreatedEvent)
-        Note over EventHandler: Log user creation
+        Note over Handler: Integration with Infrastructure Services
+        Handler->>Cache: put("user:" + userId, user)
+        Handler->>Messaging: sendMessage("user.created", userEvent)
+        
+        Handler->>EventHandler: publishDomainEvents(user)
+        Note over EventHandler: • Log user creation<br/>• Send notifications<br/>• Update analytics
         
         Handler->>Domain: user.clearDomainEvents()
-        Handler-->>Dispatcher: userId
-        Dispatcher-->>Controller: userId
+        Handler-->>Dispatcher: UserDto
+        Dispatcher-->>Controller: UserDto
         
-        Controller->>Controller: Create Response
-        Controller-->>Client: 201 Created with userId
+        Controller->>Controller: Map to Response
+        Controller-->>Client: 201 Created (ApiResponse<UserResponse>)
     end
 ```
 
-### 1.2 Chi Tiết Luồng Command
+### 1.2 Luồng Command Chi tiết
 
-#### **Bước 1: Request Handling (Presentation Layer)**
+#### **Bước 1: Xử lý Request (Presentation Layer)**
 ```java
 @PostMapping
 public ResponseEntity<ApiResponse<CreateUserResponse>> createUser(
     @Valid @RequestBody CreateUserRequest request) {
     
-    // 1. Spring Boot validation (@Valid) kiểm tra:
-    //    - firstName: không rỗng, 2-50 ký tự
-    //    - lastName: không rỗng, 2-50 ký tự  
-    //    - email: định dạng email hợp lệ
+    // 1. Spring Boot validation (@Valid) checks:
+    //    - firstName: not empty, 2-50 characters
+    //    - lastName: not empty, 2-50 characters  
+    //    - email: valid email format
     
-    // 2. Map request thành command
-    CreateUserCommand command = new CreateUserCommand();
-    command.setFirstName(request.getFirstName());
-    command.setLastName(request.getLastName());
-    command.setEmail(request.getEmail());
+    // 2. Map request to command
+    CreateUserCommand command = CreateUserCommand.builder()
+        .firstName(request.getFirstName())
+        .lastName(request.getLastName())
+        .email(request.getEmail())
+        .build();
     
     // 3. Dispatch command
-    Long userId = useCaseDispatcher.dispatch(command);
+    UserDto userDto = useCaseDispatcher.dispatch(command);
     
-    // 4. Tạo response
-    CreateUserResponse response = new CreateUserResponse(userId);
+    // 4. Create response using core ApiResponse
+    CreateUserResponse response = UserMapper.toCreateResponse(userDto);
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(ApiResponse.success(response, "User created successfully"));
 }
@@ -110,7 +142,7 @@ public ResponseEntity<ApiResponse<CreateUserResponse>> createUser(
 ```java
 @Override
 public <TResponse> TResponse dispatch(UseCase<TResponse> useCase) {
-    // 1. Lấy class của use case
+    // 1. Get use case class
     Class<?> useCaseClass = useCase.getClass();
     
     // 2. Tìm handler tương ứng từ Spring Context
@@ -126,7 +158,7 @@ public <TResponse> TResponse dispatch(UseCase<TResponse> useCase) {
 ```java
 @Override
 @Transactional
-public Long handle(CreateUserCommand command) {
+public UserDto handle(CreateUserCommand command) {
     // 1. Validate business rules
     Email email = Email.of(command.getEmail());
     
@@ -135,33 +167,40 @@ public Long handle(CreateUserCommand command) {
             "User with email " + email + " already exists");
     }
     
-    // 2. Create domain object
+    // 2. Tạo domain object
     User user = User.create(
         command.getFirstName(),
         command.getLastName(),
         email
     );
     
-    // 3. Persist to database
+    // 3. Lưu vào database
     User savedUser = userRepository.save(user);
     
-    // 4. Publish domain events
+    // 4. Tích hợp với infrastructure services
+    cacheService.put("user:" + savedUser.getId(), savedUser);
+    messagingService.sendMessage("user.created", 
+        UserCreatedEvent.of(savedUser));
+    
+    // 5. Publish domain events
     eventPublisher.publishAll(savedUser.getDomainEvents());
     savedUser.clearDomainEvents();
     
-    return savedUser.getId();
+    // 6. Trả về DTO
+    return UserMapper.toDto(savedUser);
 }
 ```
 
 #### **Bước 4: Domain Logic (Domain Layer)**
 ```java
-// Factory method trong User aggregate
+// Factory method in User aggregate
 public static User create(String firstName, String lastName, Email email) {
-    // 1. Tạo user instance với validation
+    // 1. Create user instance with validation
     User user = new User(firstName, lastName, email);
     
-    // 2. Thêm domain event
+    // 2. Add domain event
     user.addDomainEvent(new UserCreatedEvent(
+        user.getId(),
         user.getFirstName(), 
         user.getLastName(), 
         email));
@@ -169,19 +208,25 @@ public static User create(String firstName, String lastName, Email email) {
     return user;
 }
 
-// Constructor với business rules validation
-private User(String firstName, String lastName, Email email) {
-    this.firstName = validateAndTrimName(firstName, "First name");
-    this.lastName = validateAndTrimName(lastName, "Last name");
-    this.emailValue = email.getValue();
-    this.createdAt = Instant.now();
-    this.updatedAt = Instant.now();
+// Email value object validation
+public class Email {
+    private final String value;
+    
+    public static Email of(String value) {
+        if (StringUtils.isBlank(value)) {
+            throw new BusinessRuleViolationException("Email cannot be blank");
+        }
+        if (!isValidEmailFormat(value)) {
+            throw new BusinessRuleViolationException("Invalid email format");
+        }
+        return new Email(value.trim().toLowerCase());
+    }
 }
 ```
 
-## 2. Luồng Query (Đọc Dữ Liệu)
+## 2. 🔍 Query Flow (Read Data)
 
-### 2.1 Lấy Thông Tin User - GET /api/users/{id}
+### 2.1 Get User Information - GET /api/users/{id}
 
 ```mermaid
 sequenceDiagram
@@ -189,82 +234,153 @@ sequenceDiagram
     participant Controller as UserController
     participant Dispatcher as UseCaseDispatcher
     participant Handler as GetUserByIdQueryHandler
+    participant Cache as CacheService
     participant Repository as UserRepository
-    participant Mapper as UserMapper
     participant Database
 
-    Client->>Controller: GET /api/users/1
+    Client->>Controller: GET /api/users/{id}
     
-    Controller->>Controller: Create Query
+    Controller->>Controller: Validate Path Variable
+    Controller->>Controller: Create Query Object
     Controller->>Dispatcher: dispatch(GetUserByIdQuery)
     
     Dispatcher->>Handler: handle(GetUserByIdQuery)
     
-    Handler->>Repository: findById(userId)
-    Repository->>Database: SELECT * FROM users WHERE id = ?
-    Database-->>Repository: User data
-    Repository-->>Handler: Optional<User>
+    Note over Handler: Check Cache First
+    Handler->>Cache: get("user:" + id)
     
-    alt User not found
-        Handler-->>Controller: EntityNotFoundException
-        Controller-->>Client: 404 Not Found
-    else User found
-        Handler->>Mapper: toDto(user)
-        Note over Mapper: Map domain object to DTO
-        Mapper-->>Handler: UserDto
-        
+    alt Cache Hit
+        Cache-->>Handler: UserDto
         Handler-->>Dispatcher: UserDto
-        Dispatcher-->>Controller: UserDto
+    else Cache Miss
+        Handler->>Repository: findById(id)
+        Repository->>Database: SELECT * FROM users WHERE id = ?
         
-        Controller->>Controller: Create Response
-        Controller-->>Client: 200 OK with UserDto
+        alt User Found
+            Database-->>Repository: UserEntity
+            Repository-->>Handler: User Domain Object
+            Handler->>Handler: Map to UserDto
+            Handler->>Cache: put("user:" + id, userDto)
+            Handler-->>Dispatcher: UserDto
+        else User Not Found
+            Handler-->>Controller: EntityNotFoundException
+            Controller-->>Client: 404 Not Found (ApiResponse)
+        end
     end
+    
+    Dispatcher-->>Controller: UserDto
+    Controller->>Controller: Map to Response
+    Controller-->>Client: 200 OK (ApiResponse<UserResponse>)
 ```
 
-### 2.2 Chi Tiết Luồng Query
+### 2.2 Luồng Query Chi tiết
 
-#### **Bước 1: Request Handling (Presentation Layer)**
+#### **Bước 1: Xử lý Request**
 ```java
 @GetMapping("/{id}")
-public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable Long id) {
-    // 1. Tạo query object
+public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable Long id) {
+    // 1. Validate path variable (Spring thực hiện basic validation)
+    if (id <= 0) {
+        throw new ValidationException("User ID must be positive");
+    }
+    
+    // 2. Tạo query object
     GetUserByIdQuery query = new GetUserByIdQuery(id);
     
-    // 2. Dispatch query
-    UserDto user = useCaseDispatcher.dispatch(query);
+    // 3. Dispatch query
+    UserDto userDto = useCaseDispatcher.dispatch(query);
     
-    // 3. Trả về response
+    // 4. Map sang response sử dụng core utilities
+    UserResponse response = UserMapper.toResponse(userDto);
     return ResponseEntity.ok(
-        ApiResponse.success(user, "User retrieved successfully"));
+        ApiResponse.success(response, "User retrieved successfully"));
 }
 ```
 
-#### **Bước 2: Query Handler (Application Layer)**
+#### **Bước 2: Query Handler với Caching**
 ```java
 @Override
 @Transactional(readOnly = true)
 public UserDto handle(GetUserByIdQuery query) {
-    // 1. Tìm user trong database
-    User user = userRepository.findById(query.getUserId())
-        .orElseThrow(() -> new EntityNotFoundException("User", query.getUserId()));
+    Long userId = query.getUserId();
     
-    // 2. Map thành DTO
-    return userMapper.toDto(user);
+    // 1. Thử cache trước (tối ưu hóa performance)
+    Optional<Object> cached = cacheService.get("user:" + userId);
+    if (cached.isPresent()) {
+        return (UserDto) cached.get();
+    }
+    
+    // 2. Fallback sang database
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new EntityNotFoundException(
+            "User not found with ID: " + userId));
+    
+    // 3. Map sang DTO
+    UserDto userDto = UserMapper.toDto(user);
+    
+    // 4. Cache cho các requests tương lai
+    cacheService.put("user:" + userId, userDto);
+    
+    return userDto;
 }
 ```
 
-#### **Bước 3: Data Mapping (Application Layer)**
+## 3. 🚨 Luồng xử lý Exception
+
+### 3.1 Global Exception Handler (Core Component)
+
 ```java
-// UserMapper sử dụng MapStruct để tự động generate code
-@Mapping(source = "email.value", target = "email")
-@Mapping(source = "createdAt", target = "createdAt", dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-@Mapping(source = "updatedAt", target = "updatedAt", dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-UserDto toDto(User user);
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+    
+    @ExceptionHandler(BusinessRuleViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessRuleViolation(
+            BusinessRuleViolationException ex) {
+        
+        return ResponseEntity.badRequest()
+            .body(ApiResponse.error("BUSINESS_RULE_VIOLATION", ex.getMessage()));
+    }
+    
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleEntityNotFound(
+            EntityNotFoundException ex) {
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ApiResponse.error("ENTITY_NOT_FOUND", ex.getMessage()));
+    }
+    
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleValidation(
+            ValidationException ex) {
+        
+        return ResponseEntity.badRequest()
+            .body(ApiResponse.error("VALIDATION_ERROR", ex.getMessage()));
+    }
+}
 ```
 
-## 3. Luồng Event Processing
+### 3.2 Ví dụ Exception Flow
 
-### 3.1 Domain Event Flow
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Handler
+    participant Repository
+    participant GlobalHandler as GlobalExceptionHandler
+
+    Client->>Controller: POST /api/users (duplicate email)
+    Controller->>Handler: CreateUserCommand
+    Handler->>Repository: existsByEmail(email)
+    Repository-->>Handler: true
+    Handler-->>Controller: BusinessRuleViolationException
+    Controller-->>GlobalHandler: BusinessRuleViolationException
+    GlobalHandler-->>Client: 400 Bad Request (ApiResponse.error())
+```
+
+## 4. 📅 Luồng xử lý Event
+
+### 4.1 Luồng Domain Event
 
 ```mermaid
 graph TD
@@ -281,7 +397,7 @@ graph TD
     F --> K[External API Calls]
 ```
 
-#### **Event Handling Process**
+#### **Quy trình xử lý Event**
 ```java
 // 1. Event được tạo trong domain
 user.addDomainEvent(new UserCreatedEvent(firstName, lastName, email));
@@ -308,7 +424,7 @@ public class UserCreatedEventHandler implements DomainEventHandler<UserCreatedEv
 }
 ```
 
-## 4. Infrastructure Layer Integration
+## 4. Tích hợp Infrastructure Layer
 
 ### 4.1 Multi-Layer Infrastructure Flow
 
@@ -485,7 +601,7 @@ springdoc:
     path: /swagger-ui.html
 ```
 
-### 7.2 Available Endpoints
+### 7.2 Các Endpoints có sẵn
 
 - **API Endpoints:**
   - `POST /api/users` - Tạo user mới
@@ -502,15 +618,15 @@ springdoc:
   - `GET /v3/api-docs` - OpenAPI spec
   - `GET /h2-console` - H2 database console
 
-## 8. Performance Considerations
+## 8. Cân nhắc về Performance
 
-### 8.1 Transaction Management
+### 8.1 Quản lý Transaction
 
 - **Commands**: `@Transactional` (read-write)
 - **Queries**: `@Transactional(readOnly = true)` (read-only)
 - **Events**: Separate transactions để đảm bảo consistency
 
-### 8.2 Caching Strategy
+### 8.2 Chiến lược Caching
 
 ```java
 // Cache adapter cho performance
