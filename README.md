@@ -260,3 +260,40 @@ Dự án này bao gồm ArchUnit tests để đảm bảo:
 - Domain layer không có external dependencies
 - Infrastructure phụ thuộc vào domain interfaces
 - Duy trì cấu trúc package đúng cách
+
+## Tài liệu bổ sung
+
+Để hiểu rõ hơn về cách ứng dụng hoạt động, tham khảo các tài liệu sau:
+
+- **[Luồng Hoạt Động Ứng Dụng](docs/APPLICATION_FLOW.md)** - Mô tả chi tiết luồng xử lý từ HTTP request đến response
+- **[Kiến Trúc Chi Tiết](docs/ARCHITECTURE.md)** - Cấu trúc tổng quan và thiết kế hệ thống
+- **[Infrastructure Layers](docs/INFRASTRUCTURE_LAYERS.md)** - Chi tiết về các tầng infrastructure và cách sử dụng
+
+### Các luồng chính
+
+1. **Command Flow** - Xử lý các thao tác tạo/cập nhật dữ liệu (POST, PUT, DELETE)
+2. **Query Flow** - Xử lý các thao tác đọc dữ liệu (GET)
+3. **Event Flow** - Xử lý domain events và side effects
+4. **Infrastructure Integration** - Tích hợp với database, cache, external APIs, v.v.
+
+### Key Patterns
+
+- **CQRS**: Command Query Responsibility Segregation
+- **DDD**: Domain-Driven Design với Aggregates và Value Objects
+- **Clean Architecture**: Dependency Inversion và Layer Separation
+- **Event-Driven**: Domain Events để loose coupling
+- **Hexagonal Architecture**: Ports và Adapters pattern
+
+## Đóng góp
+
+Nếu bạn muốn đóng góp vào dự án:
+
+1. Fork repository
+2. Tạo feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit thay đổi (`git commit -m 'Add some amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Tạo Pull Request
+
+## License
+
+Dự án này được phân phối dưới MIT License. Xem file `LICENSE` để biết thêm chi tiết.
