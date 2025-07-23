@@ -13,12 +13,26 @@ import lombok.Getter;
 public abstract class Entity<T> {
     
     @EqualsAndHashCode.Include
-    private final T id;
+    private T id;
+    
+    // Protected no-arg constructor for JPA
+    protected Entity() {
+        this.id = null;
+    }
     
     protected Entity(T id) {
         if (id == null) {
             throw new IllegalArgumentException("Entity id cannot be null");
         }
+        this.id = id;
+    }
+    
+    /**
+     * Sets the ID of this entity. This should only be used by the persistence layer.
+     * 
+     * @param id The ID to set
+     */
+    protected void setId(T id) {
         this.id = id;
     }
     

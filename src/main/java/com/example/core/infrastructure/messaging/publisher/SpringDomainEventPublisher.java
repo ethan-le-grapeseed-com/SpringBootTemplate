@@ -3,8 +3,8 @@ package com.example.core.infrastructure.messaging.publisher;
 import com.example.core.common.event.DomainEvent;
 import com.example.core.common.event.DomainEventHandler;
 import com.example.core.common.event.DomainEventPublisher;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,22 +16,21 @@ import java.util.stream.Collectors;
  * Handles both internal domain events and external messaging.
  */
 @Service
-@RequiredArgsConstructor
+@Primary
 @Slf4j
 @SuppressWarnings("unchecked")
 public class SpringDomainEventPublisher implements DomainEventPublisher {
     
-    private final List<DomainEventHandler<? extends DomainEvent>> eventHandlers;
     private final Map<Class<? extends DomainEvent>, List<DomainEventHandler<? extends DomainEvent>>> handlerMap;
     
     public SpringDomainEventPublisher(List<DomainEventHandler<? extends DomainEvent>> eventHandlers) {
-        this.eventHandlers = eventHandlers;
         this.handlerMap = eventHandlers.stream()
             .collect(Collectors.groupingBy(DomainEventHandler::getEventType));
+        log.info("Initialized SpringDomainEventPublisher with {} event handlers", eventHandlers.size());
     }
     
     @Override
-    public void publishEvent(DomainEvent event) {
+    public void publish(DomainEvent event) {
         log.debug("Publishing domain event: {}", event.getClass().getSimpleName());
         
         List<DomainEventHandler<? extends DomainEvent>> handlers = handlerMap.get(event.getClass());
@@ -41,12 +40,13 @@ public class SpringDomainEventPublisher implements DomainEventPublisher {
             return;
         }
         
-        for (DomainEventHandler handler : handlers) {
+        for (DomainEventHandler<? extends DomainEvent> handler : handlers) {
             try {
                 log.debug("Handling event {} with handler {}", 
                     event.getClass().getSimpleName(), 
                     handler.getClass().getSimpleName());
-                handler.handle(event);
+                // Use raw type to handle the generic issue
+                ((DomainEventHandler) handler).handle(event);
             } catch (Exception e) {
                 log.error("Error handling event {} with handler {}: {}", 
                     event.getClass().getSimpleName(), 
@@ -58,5 +58,11 @@ public class SpringDomainEventPublisher implements DomainEventPublisher {
         }
         
         log.debug("Finished publishing domain event: {}", event.getClass().getSimpleName());
+    }
+    
+    @Override
+    public void publishAll(List<DomainEvent> events) {
+        log.debug("Publishing {} domain events", events.size());
+        events.forEach(this::publish);
     }
 }

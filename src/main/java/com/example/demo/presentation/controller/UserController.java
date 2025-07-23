@@ -3,6 +3,7 @@ package com.example.demo.presentation.controller;
 import com.example.core.application.service.UseCaseDispatcher;
 import com.example.demo.application.command.CreateUserCommand;
 import com.example.demo.application.dto.UserDto;
+import com.example.demo.application.query.GetAllUsersQuery;
 import com.example.demo.application.query.GetUserByIdQuery;
 import com.example.demo.presentation.request.CreateUserRequest;
 import com.example.demo.presentation.response.ApiResponse;
@@ -15,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * REST controller for user operations.
  */
@@ -25,6 +28,15 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     
     private final UseCaseDispatcher useCaseDispatcher;
+    
+    @GetMapping
+    @Operation(summary = "Get all users")
+    public ResponseEntity<ApiResponse<List<UserDto>>> getAllUsers() {
+        GetAllUsersQuery query = new GetAllUsersQuery();
+        List<UserDto> users = useCaseDispatcher.dispatch(query);
+        
+        return ResponseEntity.ok(ApiResponse.success(users, "Users retrieved successfully"));
+    }
     
     @PostMapping
     @Operation(summary = "Create a new user")

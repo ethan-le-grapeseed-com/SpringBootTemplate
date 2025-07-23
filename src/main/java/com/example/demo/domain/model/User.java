@@ -5,9 +5,7 @@ import com.example.core.domain.model.AggregateRoot;
 import com.example.demo.domain.event.UserCreatedEvent;
 import com.example.demo.domain.event.UserEmailChangedEvent;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
@@ -17,7 +15,6 @@ import java.time.Instant;
 @Entity
 @Table(name = "users")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA requirement
 public class User extends AggregateRoot<Long> {
     
     @Id
@@ -39,9 +36,14 @@ public class User extends AggregateRoot<Long> {
     @Column
     private Instant updatedAt;
     
+    // Protected constructor for JPA
+    protected User() {
+        super(); // Call no-arg constructor of AggregateRoot
+    }
+    
     // Constructor for creating new users
     private User(String firstName, String lastName, Email email) {
-        super(null); // ID will be set by JPA
+        super(); // Call no-arg constructor, ID will be set by JPA
         this.firstName = validateAndTrimName(firstName, "First name");
         this.lastName = validateAndTrimName(lastName, "Last name");
         this.emailValue = email.getValue();

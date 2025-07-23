@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * Messaging adapter for publishing and consuming messages.
  * Currently uses Spring's ApplicationEventPublisher for internal events.
@@ -24,9 +26,15 @@ public class MessagingAdapter implements DomainEventPublisher {
     }
     
     @Override
-    public void publishEvent(DomainEvent event) {
+    public void publish(DomainEvent event) {
         logger.debug("Publishing domain event: {}", event.getClass().getSimpleName());
         applicationEventPublisher.publishEvent(event);
+    }
+    
+    @Override
+    public void publishAll(List<DomainEvent> events) {
+        logger.debug("Publishing {} domain events", events.size());
+        events.forEach(this::publish);
     }
     
     /**

@@ -42,15 +42,22 @@ public class UseCaseConfig {
     
     @SuppressWarnings("unchecked")
     private Class<?> getUseCaseClass(UseCaseHandler<?, ?> handler) {
-        // This is a simplified approach - in a real application you might want to use reflection
-        // or annotations to determine the use case type
-        String handlerClassName = handler.getClass().getSimpleName();
+        // Get the actual class (not the CGLIB proxy)
+        Class<?> handlerClass = handler.getClass();
+        String handlerClassName = handlerClass.getSimpleName();
+        
+        // Handle CGLIB proxy
+        if (handlerClassName.contains("$$")) {
+            handlerClass = handlerClass.getSuperclass();
+            handlerClassName = handlerClass.getSimpleName();
+        }
+        
         String useCaseClassName = handlerClassName.replace("Handler", "");
         
         try {
-            String packageName = handler.getClass().getPackage().getName();
-            String useCasePackage = packageName.replace(".command", "").replace(".query", "");
-            return Class.forName(useCasePackage + "." + useCaseClassName);
+            String packageName = handlerClass.getPackage().getName();
+            // Try to find the use case in the same package first
+            return Class.forName(packageName + "." + useCaseClassName);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Could not find use case class for handler: " + handlerClassName, e);
         }

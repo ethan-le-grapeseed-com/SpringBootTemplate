@@ -14,6 +14,11 @@ public abstract class AggregateRoot<T> extends Entity<T> {
     
     private final List<DomainEvent> domainEvents = new ArrayList<>();
     
+    // Protected no-arg constructor for JPA
+    protected AggregateRoot() {
+        super();
+    }
+    
     protected AggregateRoot(T id) {
         super(id);
     }

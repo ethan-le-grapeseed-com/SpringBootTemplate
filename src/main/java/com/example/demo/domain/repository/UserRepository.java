@@ -4,6 +4,7 @@ import com.example.core.domain.repository.Repository;
 import com.example.demo.domain.model.Email;
 import com.example.demo.domain.model.User;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -26,4 +27,11 @@ public interface UserRepository extends Repository<User, Long> {
      * @return true if exists, false otherwise
      */
     boolean existsByEmail(Email email);
+    
+    /**
+     * Finds all users.
+     * 
+     * @return List of all users
+     */
+    List<User> findAll();
 }

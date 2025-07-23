@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -30,5 +31,15 @@ public class UserDatabaseAdapter extends DatabaseRepositoryAdapter<User, Long>
     @Override
     public Optional<User> findByEmail(Email email) {
         return jpaUserRepository.findByEmailValue(email.getValue());
+    }
+    
+    @Override
+    public boolean existsByEmail(Email email) {
+        return jpaUserRepository.findByEmailValue(email.getValue()).isPresent();
+    }
+    
+    @Override
+    public List<User> findAll() {
+        return jpaUserRepository.findAll();
     }
 }
