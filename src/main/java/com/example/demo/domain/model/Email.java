@@ -21,6 +21,9 @@ public class Email extends ValueObject {
     
     public static Email of(String email) {
         String trimmedEmail = email != null ? email.trim() : null;
+        if (trimmedEmail == null) {
+            throw new BusinessRuleViolationException("Email cannot be null or empty");
+        }
         validateEmail(trimmedEmail);
         return new Email(trimmedEmail.toLowerCase());
     }
