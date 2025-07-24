@@ -1,8 +1,8 @@
 package com.example.demo.application.command;
 
 import com.example.core.application.command.CommandHandler;
-import com.example.core.common.event.DomainEventPublisher;
-import com.example.core.common.exception.BusinessRuleViolationException;
+import com.example.core.domain.event.DomainEventPublisher;
+import com.example.core.domain.exception.BusinessRuleViolationException;
 import com.example.demo.domain.model.Email;
 import com.example.demo.domain.model.User;
 import com.example.demo.domain.repository.UserRepository;

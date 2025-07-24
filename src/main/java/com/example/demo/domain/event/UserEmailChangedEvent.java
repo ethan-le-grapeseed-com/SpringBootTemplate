@@ -1,6 +1,6 @@
 package com.example.demo.domain.event;
 
-import com.example.core.common.event.DomainEvent;
+import com.example.core.domain.event.DomainEvent;
 import com.example.demo.domain.model.Email;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

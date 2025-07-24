@@ -1,6 +1,6 @@
 package com.example.demo.presentation.exception;
 
-import com.example.core.common.exception.handler.GlobalExceptionHandler;
+import com.example.core.presentation.exception.GlobalExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**

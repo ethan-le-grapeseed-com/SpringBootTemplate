@@ -1,7 +1,7 @@
 package com.example.core.infrastructure.messaging.adapter;
 
-import com.example.core.common.event.DomainEvent;
-import com.example.core.common.event.DomainEventPublisher;
+import com.example.core.domain.event.DomainEvent;
+import com.example.core.domain.event.DomainEventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;

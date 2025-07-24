@@ -7,17 +7,96 @@ Tài liệu này mô tả luồng xử lý hoàn chình của Spring Boot Clean 
 ## 🏗️ Tổng quan Kiến trúc
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Presentation  │ -> │   Application   │ -> │     Domain      │ -> │ Infrastructure  │
-│     Layer       │    │     Layer       │    │     Layer       │    │     Layer       │
-│                 │    │                 │    │                 │    │                 │
-│ • Controllers   │    │ • Use Cases     │    │ • Entities      │    │ • Database      │
-│ • DTOs          │    │ • Commands      │    │ • Value Objects │    │ • Cache         │
-│ • Validation    │    │ • Queries       │    │ • Domain Events │    │ • External APIs │
-│ • Exception     │    │ • Mappers       │    │ • Business Rules│    │ • Messaging     │
-│   Handling      │    │ • Event Handlers│    │ • Repositories  │    │ • Security      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Presentation  │───▶│   Application   │───▶│     Domain      │
+│     Layer       │    │     Layer       │    │     Layer       │
+│                 │    │                 │    │                 │
+│ • Controllers   │    │ • Use Cases     │    │ • Entities      │
+│ • Exception     │    │ • Commands      │    │ • Value Objects │
+│   Handlers      │    │ • Queries       │    │ • Domain Events │
+│ • Request DTOs  │    │ • Services      │    │ • Exceptions    │
+│ • Response DTOs │    │ • Mappers       │    │ • Validation    │
+│ • Validation    │    │ • Event Handlers│    │ • Repositories  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+       │                          ▲                     
+       │                          │                     
+       ▼                          │                     
+┌─────────────────┐               │                     
+│ Infrastructure  │──────────────┘                     
+│     Layer       │                                    
+│                 │               ┌─────────────────┐  
+│ • Database      │               │     Common      │  
+│ • Cache         │               │     Layer       │  
+│ • External APIs │               │                 │  
+│ • Messaging     │               │ • Utilities     │  
+│ • Security      │               │ • String Utils  │  
+│ • Config        │               │ • Date Utils    │  
+└─────────────────┘               │ • Page Utils    │  
+                                  │ • Constants     │  
+                                  │ • Enums         │  
+                                  └─────────────────┘  
 ```
+
+### 🔄 **Dependency Rules (Tuân thủ Clean Architecture)**
+```
+✅ ĐÚNG:
+Presentation ──▶ Application ──▶ Domain
+Infrastructure ──▶ Application (implements interfaces)
+Common ◄── All Layers (shared utilities)
+
+❌ SAI (đã sửa):
+Domain ──▶ Infrastructure (VI PHẠM!)
+```
+
+### 📁 Cấu trúc Package Chi tiết
+
+```
+com.example.core/
+├── presentation/           # Presentation Layer (Depends: Application)
+│   ├── exception/         # Global exception handlers
+│   ├── request/           # HTTP request DTOs
+│   └── response/          # HTTP response DTOs
+│
+├── application/           # Application Layer (Depends: Domain only)
+│   ├── command/           # Command pattern interfaces
+│   ├── query/             # Query pattern interfaces
+│   ├── dto/               # Data transfer objects
+│   ├── mapper/            # DTO mapping interfaces
+│   ├── service/           # Application service interfaces
+│   └── usecase/           # Use case interfaces
+│
+├── domain/               # Domain Layer (NO external dependencies)
+│   ├── model/            # Domain entities & value objects
+│   ├── event/            # Domain events & publishers
+│   ├── exception/        # Domain-specific exceptions
+│   ├── validation/       # Domain validation logic
+│   └── repository/       # Repository interfaces (implemented by Infrastructure)
+│
+├── infrastructure/       # Infrastructure Layer (Depends: Application + Domain interfaces)
+│   ├── database/         # Database adapters & config
+│   ├── cache/            # Cache adapters & config
+│   ├── external/         # External API integrations
+│   ├── messaging/        # Event publishing & messaging
+│   ├── security/         # Security implementations
+│   ├── service/          # Infrastructure service implementations
+│   └── config/           # Infrastructure configuration
+│
+└── common/              # Common/Shared Layer (Used by: All layers)
+    └── util/            # Shared utility classes
+        ├── StringUtils   # String manipulation & validation
+        ├── DateTimeUtils # Date/time operations
+        └── PageUtils     # Pagination utilities
+```
+
+### 🎯 **Tuân thủ Clean Architecture**
+
+| Layer | Phụ thuộc | Trạng thái | Mô tả |
+|-------|-----------|------------|-------|
+| **Domain** | KHÔNG | ✅ Thuần túy | Không có phụ thuộc ngoài, logic nghiệp vụ thuần túy |
+| **Application** | Chỉ Domain | ✅ Sạch sẽ | Sử dụng interfaces domain, định nghĩa contracts cho infrastructure |
+| **Infrastructure** | Application + Domain interfaces | ✅ Đúng | Implement các interfaces application, phụ thuộc vào contracts domain |
+| **Presentation** | Application | ✅ Phù hợp | Controllers phụ thuộc vào application services |
+| **Common** | Không (được dùng bởi tất cả) | ✅ Chia sẻ | Các hàm tiện ích có thể truy cập từ mọi layer |
 
 ## 🔄 Tích hợp Application Service
 

@@ -1,6 +1,6 @@
 package com.example.demo.domain.model;
 
-import com.example.core.common.exception.BusinessRuleViolationException;
+import com.example.core.domain.exception.BusinessRuleViolationException;
 import com.example.core.domain.model.AggregateRoot;
 import com.example.demo.domain.event.UserCreatedEvent;
 import com.example.demo.domain.event.UserEmailChangedEvent;

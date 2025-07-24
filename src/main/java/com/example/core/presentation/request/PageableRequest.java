@@ -1,4 +1,4 @@
-package com.example.core.common.request;
+package com.example.core.presentation.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;

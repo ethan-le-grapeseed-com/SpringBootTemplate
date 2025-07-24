@@ -1,8 +1,8 @@
-package com.example.core.common.exception.handler;
+package com.example.core.presentation.exception;
 
-import com.example.core.common.exception.BusinessRuleViolationException;
-import com.example.core.common.exception.EntityNotFoundException;
-import com.example.core.common.response.ApiResponse;
+import com.example.core.domain.exception.BusinessRuleViolationException;
+import com.example.core.domain.exception.EntityNotFoundException;
+import com.example.core.presentation.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

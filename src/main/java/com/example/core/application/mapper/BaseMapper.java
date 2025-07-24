@@ -1,4 +1,4 @@
-package com.example.core.common.mapper;
+package com.example.core.application.mapper;
 
 /**
  * Base mapper interface for converting between domain entities and DTOs.

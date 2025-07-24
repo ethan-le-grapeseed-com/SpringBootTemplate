@@ -1,4 +1,4 @@
-package com.example.core.common.exception;
+package com.example.core.domain.exception;
 
 /**
  * Base class for all domain exceptions.

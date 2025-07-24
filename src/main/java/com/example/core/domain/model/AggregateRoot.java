@@ -1,6 +1,6 @@
 package com.example.core.domain.model;
 
-import com.example.core.common.event.DomainEvent;
+import com.example.core.domain.event.DomainEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -26,100 +26,102 @@ Domain ← Application ← Infrastructure
 src/main/java/com/example/
 │
 ├── core/                                    # 📦 CORE PACKAGE - Thành phần tái sử dụng
-│   ├── common/                              # Shared components
-│   │   ├── exception/                       # Exception handling
-│   │   │   ├── handler/                     # Global exception handlers
-│   │   │   │   └── GlobalExceptionHandler.java  # Common exception handler
+│   ├── common/                              # Shared utilities & components
+│   │   └── util/                            # Utility classes
+│   │       ├── StringUtils.java             # String manipulation utilities
+│   │       ├── DateTimeUtils.java           # Date/time utilities
+│   │       └── PageUtils.java               # Pagination utilities
+│   │
+│   ├── domain/                              # Domain layer (Business logic)
+│   │   ├── model/                           # Domain models
+│   │   │   ├── AggregateRoot.java           # Base class cho aggregates
+│   │   │   ├── Entity.java                  # Base class cho entities
+│   │   │   └── ValueObject.java             # Base class cho value objects
+│   │   ├── repository/                      # Repository interfaces
+│   │   │   └── Repository.java              # Base repository interface
+│   │   ├── event/                           # Domain events
+│   │   │   ├── DomainEvent.java             # Interface cho domain events
+│   │   │   ├── DomainEventHandler.java      # Handler cho events
+│   │   │   └── DomainEventPublisher.java    # Publisher service
+│   │   ├── exception/                       # Domain-specific exceptions
 │   │   │   ├── DomainException.java         # Base exception cho domain
 │   │   │   ├── BusinessRuleViolationException.java
 │   │   │   └── EntityNotFoundException.java
-│   │   ├── response/                        # API Response wrappers
-│   │   │   └── ApiResponse.java             # Generic response wrapper
-│   │   ├── util/                           # Utility classes
-│   │   │   ├── StringUtils.java            # String manipulation utilities
-│   │   │   ├── DateTimeUtils.java          # Date/time utilities
-│   │   │   └── PageUtils.java              # Pagination utilities
-│   │   ├── mapper/                         # Mapping interfaces
-│   │   │   └── BaseMapper.java             # Base mapper interface
-│   │   ├── request/                        # Base request classes
-│   │   │   └── PageableRequest.java        # Paginated request base
-│   │   ├── event/                          # Domain events
-│   │   │   ├── DomainEvent.java            # Interface cho domain events
-│   │   │   ├── DomainEventHandler.java     # Handler cho events
-│   │   │   └── DomainEventPublisher.java   # Publisher service
-│   │   └── validation/                     # Validation utilities
-│   │       ├── DomainValidator.java        # Domain validation
-│   │       ├── ValidationError.java        # Validation error model
-│   │       └── ValidationResult.java       # Validation result
+│   │   └── validation/                      # Domain validation logic
+│   │       ├── DomainValidator.java         # Domain validation
+│   │       ├── ValidationError.java         # Validation error model
+│   │       └── ValidationResult.java        # Validation result
 │   │
-│   ├── domain/                             # Domain layer (Business logic)
-│   │   ├── model/                          # Domain models
-│   │   │   ├── AggregateRoot.java          # Base class cho aggregates
-│   │   │   ├── Entity.java                 # Base class cho entities
-│   │   │   └── ValueObject.java            # Base class cho value objects
-│   │   └── repository/                     # Repository interfaces
-│   │       └── Repository.java             # Base repository interface
+│   ├── application/                         # Application layer (Use cases & Services)
+│   │   ├── usecase/                         # Use case interfaces
+│   │   │   ├── UseCase.java                 # Base use case interface
+│   │   │   └── UseCaseHandler.java          # Use case handler
+│   │   ├── command/                         # Commands (CQRS)
+│   │   │   ├── Command.java                 # Base command interface
+│   │   │   └── CommandHandler.java          # Command handler interface
+│   │   ├── query/                           # Queries (CQRS)
+│   │   │   ├── Query.java                   # Base query interface
+│   │   │   └── QueryHandler.java            # Query handler interface
+│   │   ├── dto/                             # Data Transfer Objects
+│   │   │   └── BaseDto.java                 # Base DTO class
+│   │   ├── mapper/                          # DTO mapping interfaces
+│   │   │   └── BaseMapper.java              # Base mapper interface
+│   │   └── service/                         # Application service interfaces
+│   │       ├── UseCaseDispatcher.java       # Use case dispatcher
+│   │       ├── CacheService.java            # Cache operations interface
+│   │       ├── ExternalApiService.java      # External API interface
+│   │       ├── MessagingService.java        # Messaging interface
+│   │       └── SecurityService.java         # Security interface
 │   │
-│   ├── application/                        # Application layer (Use cases & Services)
-│   │   ├── usecase/                        # Use case interfaces
-│   │   │   ├── UseCase.java                # Base use case interface
-│   │   │   └── UseCaseHandler.java         # Use case handler
-│   │   ├── command/                        # Commands (CQRS)
-│   │   │   ├── Command.java                # Base command interface
-│   │   │   └── CommandHandler.java         # Command handler interface
-│   │   ├── query/                          # Queries (CQRS)
-│   │   │   ├── Query.java                  # Base query interface
-│   │   │   └── QueryHandler.java           # Query handler interface
-│   │   ├── dto/                            # Data Transfer Objects
-│   │   │   └── BaseDto.java                # Base DTO class
-│   │   └── service/                        # Application service interfaces
-│   │       ├── UseCaseDispatcher.java      # Use case dispatcher
-│   │       ├── CacheService.java           # Cache operations interface
-│   │       ├── ExternalApiService.java     # External API interface
-│   │       ├── MessagingService.java       # Messaging interface
-│   │       └── SecurityService.java        # Security interface
+│   ├── infrastructure/                      # Infrastructure layer
+│   │   ├── service/                         # Application service implementations
+│   │   │   ├── CacheServiceImpl.java        # Cache service implementation
+│   │   │   ├── ExternalApiServiceImpl.java  # External API service implementation
+│   │   │   ├── MessagingServiceImpl.java    # Messaging service implementation
+│   │   │   ├── SecurityServiceImpl.java     # Security service implementation
+│   │   │   └── SpringUseCaseDispatcher.java # Use case dispatcher implementation
+│   │   ├── database/                        # Database layer
+│   │   │   ├── config/                      # Database configuration
+│   │   │   │   └── DatabaseConfig.java
+│   │   │   └── adapter/                     # Database adapters
+│   │   │       └── DatabaseRepositoryAdapter.java
+│   │   ├── cache/                           # Cache layer
+│   │   │   ├── config/                      # Cache configuration
+│   │   │   │   └── CacheConfig.java
+│   │   │   └── adapter/                     # Cache adapters
+│   │   │       └── CacheAdapter.java
+│   │   ├── external/                        # External API layer
+│   │   │   ├── config/                      # External API configuration
+│   │   │   │   └── ExternalApiConfig.java
+│   │   │   ├── adapter/                     # External API adapters
+│   │   │   │   └── ExternalApiAdapter.java
+│   │   │   └── exception/                   # External API exceptions
+│   │   │       └── ExternalApiException.java
+│   │   ├── messaging/                       # Messaging layer
+│   │   │   ├── config/                      # Messaging configuration
+│   │   │   │   └── MessagingConfig.java
+│   │   │   ├── adapter/                     # Messaging adapters
+│   │   │   │   └── MessagingAdapter.java
+│   │   │   └── publisher/                   # Event publishers
+│   │   │       └── SpringDomainEventPublisher.java
+│   │   ├── security/                        # Security layer
+│   │   │   ├── config/                      # Security configuration
+│   │   │   │   └── SecurityConfig.java
+│   │   │   └── adapter/                     # Security adapters
+│   │   │       └── SecurityAdapter.java
+│   │   └── config/                          # Infrastructure configuration
+│   │       ├── UseCaseConfig.java           # Main configuration
+│   │       ├── WebConfig.java               # Web & CORS configuration
+│   │       ├── LoggingConfig.java           # Request/response logging
+│   │       └── OpenApiConfig.java           # OpenAPI/Swagger configuration
 │   │
-│   └── infrastructure/                     # Infrastructure layer
-│       ├── service/                         # Application service implementations
-│       │   ├── CacheServiceImpl.java        # Cache service implementation
-│       │   ├── ExternalApiServiceImpl.java  # External API service implementation
-│       │   ├── MessagingServiceImpl.java    # Messaging service implementation
-│       │   └── SecurityServiceImpl.java     # Security service implementation
-│       ├── database/                        # Database layer
-│       │   ├── config/                      # Database configuration
-│       │   │   └── DatabaseConfig.java
-│       │   └── adapter/                     # Database adapters
-│       │       └── DatabaseRepositoryAdapter.java
-│       ├── cache/                           # Cache layer
-│       │   ├── config/                      # Cache configuration
-│       │   │   └── CacheConfig.java
-│       │   └── adapter/                     # Cache adapters
-│       │       └── CacheAdapter.java
-│       ├── external/                        # External API layer
-│       │   ├── config/                      # External API configuration
-│       │   │   └── ExternalApiConfig.java
-│       │   ├── adapter/                     # External API adapters
-│       │   │   └── ExternalApiAdapter.java
-│       │   └── exception/                   # External API exceptions
-│       │       └── ExternalApiException.java
-│       ├── messaging/                       # Messaging layer
-│       │   ├── config/                      # Messaging configuration
-│       │   │   └── MessagingConfig.java
-│       │   ├── adapter/                     # Messaging adapters
-│       │   │   └── MessagingAdapter.java
-│       │   └── publisher/                   # Event publishers
-│       │       └── SpringDomainEventPublisher.java
-│       ├── security/                        # Security layer
-│       │   ├── config/                      # Security configuration
-│       │   │   └── SecurityConfig.java
-│       │   └── adapter/                     # Security adapters
-│       │       └── SecurityAdapter.java
-│       ├── service/                         # Infrastructure services
-│       │   └── SpringUseCaseDispatcher.java
-│       └── config/                          # Configuration hub
-│           ├── UseCaseConfig.java           # Main configuration
-│           ├── WebConfig.java               # Web & CORS configuration
-│           └── LoggingConfig.java           # Request/response logging
+│   └── presentation/                        # Presentation layer (Web interface)
+│       ├── exception/                       # Global exception handlers
+│       │   └── GlobalExceptionHandler.java  # Common exception handler
+│       ├── request/                         # HTTP request DTOs
+│       │   └── PageableRequest.java         # Paginated request base
+│       └── response/                        # HTTP response DTOs
+│           └── ApiResponse.java             # Generic response wrapper
 │
 └── demo/                                    # 📦 DEMO PACKAGE - Ví dụ implementation
     ├── domain/                              # Demo domain logic
@@ -139,7 +141,9 @@ src/main/java/com/example/
     │   │   └── CreateUserCommandHandler.java
     │   ├── query/                           # Queries
     │   │   ├── GetUserByIdQuery.java
-    │   │   └── GetUserByIdQueryHandler.java
+    │   │   ├── GetUserByIdQueryHandler.java
+    │   │   ├── GetAllUsersQuery.java
+    │   │   └── GetAllUsersQueryHandler.java
     │   ├── dto/                             # DTOs
     │   │   └── UserDto.java
     │   ├── mapper/                          # Object mapping
@@ -150,16 +154,11 @@ src/main/java/com/example/
     │       └── UserCreatedEventHandler.java
     │
     ├── infrastructure/                      # Demo infrastructure
-    │   ├── database/                        # Database implementation
-    │   │   ├── repository/                  # JPA repositories
-    │   │   │   └── UserJpaRepository.java
-    │   │   └── entity/                      # JPA entities
-    │   │       └── UserEntity.java
-    │   └── adapter/                         # Infrastructure adapters
-    │       ├── CacheAdapter.java
-    │       ├── ExternalApiAdapter.java
-    │       ├── MessagingAdapter.java
-    │       └── SecurityAdapter.java
+    │   └── database/                        # Database implementation
+    │       ├── repository/                  # JPA repositories
+    │       │   └── UserJpaRepository.java
+    │       └── entity/                      # JPA entities
+    │           └── UserEntity.java
     │
     └── presentation/                        # Demo web layer
         ├── controller/                      # REST controllers
@@ -167,10 +166,11 @@ src/main/java/com/example/
         ├── request/                         # Request DTOs
         │   ├── CreateUserRequest.java
         │   └── UserRequest.java
-        ├── response/                        # Response DTOs (inherits from core)
+        ├── response/                        # Response DTOs
+        │   ├── CreateUserResponse.java
         │   └── UserResponse.java
         └── exception/                       # Controller exception handling
-            └── UserControllerAdvice.java    # Extends GlobalExceptionHandler
+            └── DemoGlobalExceptionHandler.java  # Extends GlobalExceptionHandler
 ```
 
 ## 🏗️ Clean Architecture Layers
@@ -269,27 +269,29 @@ public class UseCaseConfig {
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │Presentation │───▶│Application  │───▶│   Domain    │
 └─────────────┘    └─────────────┘    └─────────────┘
-       │                   ▲                   │
-       │                   │                   │
-       ▼                   │                   │
-┌─────────────┐            │                   │
-│Infrastructure│───────────┘                   │
-│(implements  │◄──────────────────────────────┘
-│ interfaces) │
+       │                   ▲                   
+       │                   │                   
+       ▼                   │                   
+┌─────────────┐            │                   
+│Infrastructure│───────────┘                   
+│(implements  │                               
+│ interfaces) │                               
 └─────────────┘
 
 Luồng Dependencies:
 • Presentation ──▶ Application ──▶ Domain
 • Infrastructure ──▶ Application (implements interfaces)
-• Infrastructure ──▶ Domain (implements repositories)
+• Infrastructure KHÔNG depend vào Domain trực tiếp
+  (chỉ implement các interfaces được định nghĩa trong Application)
 ```
 
 **Quy tắc chính:**
 - ✅ Presentation có thể depend vào Application
 - ✅ Application có thể depend vào Domain  
 - ✅ Infrastructure implements Application interfaces
-- ❌ Domain không thể depend vào bất cứ thứ gì
+- ✅ Domain HOÀN TOÀN ĐỘC LẬP - không depend vào bất cứ thứ gì
 - ❌ Application không thể depend trực tiếp vào Infrastructure
+- ❌ Domain không thể depend vào Infrastructure hoặc Application
 
 ## 🎨 **Các Design Patterns Được Sử dụng**
 

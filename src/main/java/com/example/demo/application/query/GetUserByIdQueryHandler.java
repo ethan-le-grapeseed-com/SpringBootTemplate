@@ -1,7 +1,7 @@
 package com.example.demo.application.query;
 
 import com.example.core.application.query.QueryHandler;
-import com.example.core.common.exception.EntityNotFoundException;
+import com.example.core.domain.exception.EntityNotFoundException;
 import com.example.demo.application.dto.UserDto;
 import com.example.demo.application.mapper.UserMapper;
 import com.example.demo.domain.model.User;

@@ -1,8 +1,8 @@
 package com.example.core.infrastructure.messaging.publisher;
 
-import com.example.core.common.event.DomainEvent;
-import com.example.core.common.event.DomainEventHandler;
-import com.example.core.common.event.DomainEventPublisher;
+import com.example.core.domain.event.DomainEvent;
+import com.example.core.domain.event.DomainEventHandler;
+import com.example.core.domain.event.DomainEventPublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,6 @@
 package com.example.demo.application.eventhandler;
 
-import com.example.core.common.event.DomainEventHandler;
+import com.example.core.domain.event.DomainEventHandler;
 import com.example.demo.domain.event.UserCreatedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

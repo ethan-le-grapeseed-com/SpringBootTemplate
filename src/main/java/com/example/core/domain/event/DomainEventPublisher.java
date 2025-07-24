@@ -1,4 +1,4 @@
-package com.example.core.common.event;
+package com.example.core.domain.event;
 
 import java.util.List;
 

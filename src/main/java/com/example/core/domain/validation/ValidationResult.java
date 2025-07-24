@@ -1,4 +1,4 @@
-package com.example.core.common.validation;
+package com.example.core.domain.validation;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

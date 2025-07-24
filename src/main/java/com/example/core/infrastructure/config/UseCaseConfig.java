@@ -1,6 +1,7 @@
 package com.example.core.infrastructure.config;
 
 import com.example.core.application.usecase.UseCaseHandler;
+import com.example.core.domain.validation.DomainValidator;
 import com.example.core.infrastructure.service.SpringUseCaseDispatcher;
 import com.example.core.infrastructure.database.config.DatabaseConfig;
 import com.example.core.infrastructure.cache.config.CacheConfig;
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import jakarta.validation.Validator;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,15 @@ import java.util.stream.Collectors;
     LoggingConfig.class
 })
 public class UseCaseConfig {
+    
+    /**
+     * Configure DomainValidator as infrastructure bean.
+     * Domain layer defines the contract, infrastructure provides the implementation.
+     */
+    @Bean
+    public DomainValidator domainValidator(Validator validator) {
+        return new DomainValidator(validator);
+    }
     
     @Bean
     public Map<Class<?>, UseCaseHandler<?, ?>> useCaseHandlers(ApplicationContext applicationContext) {

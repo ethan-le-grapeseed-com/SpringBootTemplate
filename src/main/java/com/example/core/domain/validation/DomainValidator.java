@@ -1,21 +1,22 @@
-package com.example.core.common.validation;
+package com.example.core.domain.validation;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * Domain validator for business rule validation.
+ * This is a pure domain service without framework dependencies.
  */
-@Component
-@RequiredArgsConstructor
 public class DomainValidator {
     
     private final Validator validator;
+    
+    public DomainValidator(Validator validator) {
+        this.validator = validator;
+    }
     
     /**
      * Validates an object and throws exception if invalid.

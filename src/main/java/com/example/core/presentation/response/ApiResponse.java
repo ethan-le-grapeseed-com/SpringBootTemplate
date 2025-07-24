@@ -1,4 +1,4 @@
-package com.example.core.common.response;
+package com.example.core.presentation.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
