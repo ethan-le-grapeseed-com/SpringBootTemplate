@@ -1,12 +1,12 @@
 package com.example.demo.presentation.controller;
 
 import com.example.core.application.service.UseCaseDispatcher;
+import com.example.core.common.response.ApiResponse;
 import com.example.demo.application.command.CreateUserCommand;
 import com.example.demo.application.dto.UserDto;
 import com.example.demo.application.query.GetAllUsersQuery;
 import com.example.demo.application.query.GetUserByIdQuery;
 import com.example.demo.presentation.request.CreateUserRequest;
-import com.example.demo.presentation.response.ApiResponse;
 import com.example.demo.presentation.response.CreateUserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

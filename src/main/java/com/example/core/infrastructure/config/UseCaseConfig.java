@@ -25,7 +25,9 @@ import java.util.stream.Collectors;
     CacheConfig.class,
     ExternalApiConfig.class,
     MessagingConfig.class,
-    SecurityConfig.class
+    SecurityConfig.class,
+    WebConfig.class,
+    LoggingConfig.class
 })
 public class UseCaseConfig {
     

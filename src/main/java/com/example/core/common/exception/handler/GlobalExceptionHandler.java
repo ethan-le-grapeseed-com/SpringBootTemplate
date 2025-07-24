@@ -1,8 +1,8 @@
-package com.example.demo.presentation.exception;
+package com.example.core.common.exception.handler;
 
 import com.example.core.common.exception.BusinessRuleViolationException;
 import com.example.core.common.exception.EntityNotFoundException;
-import com.example.demo.presentation.response.ApiResponse;
+import com.example.core.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,12 +15,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Global exception handler for the application.
+ * Global exception handler for consistent error handling across all Spring Boot applications.
+ * This is a shared component that can be reused across projects.
  */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
     
+    /**
+     * Handle EntityNotFoundException - returns 404 Not Found.
+     */
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiResponse<Object>> handleEntityNotFound(EntityNotFoundException ex) {
         log.warn("Entity not found: {}", ex.getMessage());
@@ -28,6 +32,9 @@ public class GlobalExceptionHandler {
             .body(ApiResponse.error("Resource not found", ex.getMessage()));
     }
     
+    /**
+     * Handle BusinessRuleViolationException - returns 400 Bad Request.
+     */
     @ExceptionHandler(BusinessRuleViolationException.class)
     public ResponseEntity<ApiResponse<Object>> handleBusinessRuleViolation(BusinessRuleViolationException ex) {
         log.warn("Business rule violation: {}", ex.getMessage());
@@ -35,6 +42,9 @@ public class GlobalExceptionHandler {
             .body(ApiResponse.error("Business rule violation", ex.getMessage()));
     }
     
+    /**
+     * Handle validation errors from @Valid annotations - returns 400 Bad Request.
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptions(
         MethodArgumentNotValidException ex) {
@@ -51,6 +61,9 @@ public class GlobalExceptionHandler {
             .body(new ApiResponse<>(false, errors, "Validation failed", null));
     }
     
+    /**
+     * Handle IllegalArgumentException - returns 400 Bad Request.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Object>> handleIllegalArgument(IllegalArgumentException ex) {
         log.warn("Invalid argument: {}", ex.getMessage());
@@ -58,6 +71,9 @@ public class GlobalExceptionHandler {
             .body(ApiResponse.error("Invalid request", ex.getMessage()));
     }
     
+    /**
+     * Handle all other unexpected exceptions - returns 500 Internal Server Error.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
         log.error("Unexpected error occurred", ex);
